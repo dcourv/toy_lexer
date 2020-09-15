@@ -6,7 +6,9 @@ use std::path::Path;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// @NOTE: in future rust versions, will be able to use question mark here too
 	let file_name = args().nth(1).expect("No input file specified");
-	let file_str = read_to_string(Path::new(&file_name))?;
+	let file_cnts = read_to_string(Path::new(&file_name))?;
+
+	let mut cnts_to_read = &file_cnts[..];
 
 	let mut lexemes: Vec<&str> = Vec::new();
 	let mut token_classes: Vec<&str> = Vec::new();
@@ -16,44 +18,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let identifier_regex = Regex::new(r"[a-zA-Z][a-zA-Z\d]*").unwrap();
 	let literal_regex = Regex::new(r"\d+((E(\+|-)?\d+)|(\.\d+))?").unwrap();
 
-	// @OPTIMIZE ?
-	let mut i = 0;
-	while i < file_str.len() {
+	let mut chr_idx = 0;
+	while cnts_to_read.len() > 0 {
 		// First eliminate any whitespace
 		// @TODO eliminate array bounds check?
-		if let Some(mtch) = whitespace_regex.find(&file_str[i..]) {
+		if let Some(mtch) = whitespace_regex.find(cnts_to_read) {
 			if mtch.start() == 0 {
-				i += mtch.end();
+				cnts_to_read = &cnts_to_read[mtch.end()..];
+				chr_idx += mtch.end();
 				continue;
 			}
 		}
-		if let Some(mtch) = identifier_regex.find(&file_str[i..]) {
+		if let Some(mtch) = identifier_regex.find(cnts_to_read) {
 			// Rust is stupid and won't let me write this with an `&&` above
 			// Make sure match is at start
 			if mtch.start() == 0 {
 				token_classes.push("identifier");
-				lexemes.push(&file_str[i..i + mtch.end()]);
-				i += mtch.end();
+				lexemes.push(&cnts_to_read[..mtch.end()]);
+				cnts_to_read = &cnts_to_read[mtch.end()..];
+				chr_idx += mtch.end();
 				continue;
 			}
 		}
-		if let Some(mtch) = operator_regex.find(&file_str[i..]) {
+		if let Some(mtch) = operator_regex.find(cnts_to_read) {
 			if mtch.start() == 0 {
 				token_classes.push("operator");
-				lexemes.push(&file_str[i..i + mtch.end()]);
-				i += mtch.end();
+				lexemes.push(&cnts_to_read[..mtch.end()]);
+				cnts_to_read = &cnts_to_read[mtch.end()..];
+				chr_idx += mtch.end();
 				continue;
 			}
 		}
-		if let Some(mtch) = literal_regex.find(&file_str[i..]) {
+		if let Some(mtch) = literal_regex.find(cnts_to_read) {
 			if mtch.start() == 0 {
 				token_classes.push("literal");
-				lexemes.push(&file_str[i..i + mtch.end()]);
-				i += mtch.end();
+				lexemes.push(&cnts_to_read[..mtch.end()]);
+				cnts_to_read = &cnts_to_read[mtch.end()..];
+				chr_idx += mtch.end();
 				continue;
 			}
 		} else {
-			panic!("Lex error -- unrecognized token at character {}", i);
+			panic!("Lex error -- unrecognized token at character {}", chr_idx);
 		}
 	}
 
