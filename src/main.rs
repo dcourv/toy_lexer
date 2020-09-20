@@ -3,8 +3,6 @@ use std::env::args;
 use std::fs::read_to_string;
 use std::path::Path;
 
-// @TODO fix nasty control flow
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// @NOTE: in future rust versions, will be able to use question mark here too
 	let file_name = args().nth(1).expect("No input file specified");
@@ -75,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	}
 
 	for i in 0..lexemes.len() {
-		print!("[{} {}] ", token_classes[i], lexemes[i]);
+		print!("[{}\t{}] \n", token_classes[i], lexemes[i]);
 	}
 	println!("");
 	Ok(())
